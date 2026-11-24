@@ -1,3 +1,5 @@
+import pytest
+
 from src.models import Bill, Parameters, TenantSettlement, ApartmentSettlement, Transfer
 from src.manager import Manager
 
@@ -85,3 +87,49 @@ def test_apartment_has_any_bills():
 
     has_bills = manager.has_any_bills('apart-polanka', 2025, 3)
     assert has_bills == False
+
+
+def test_transfer_limits_validation():
+    manager = Manager(Parameters())
+    manager.set_transfer_limits(-1000.0, 5000.0)
+
+    assert manager.validate_transfers() == []
+
+    too_low = Transfer(
+        tenant='tenant-1',
+        date='2025-02-01',
+        settlement_year=2025,
+        settlement_month=2,
+        amount_pln=-1500.0
+    )
+    too_high = Transfer(
+        tenant='tenant-2',
+        date='2025-02-02',
+        settlement_year=2025,
+        settlement_month=2,
+        amount_pln=6000.0
+    )
+    edge_min = Transfer(
+        tenant='tenant-3',
+        date='2025-02-03',
+        settlement_year=2025,
+        settlement_month=2,
+        amount_pln=-1000.0
+    )
+    edge_max = Transfer(
+        tenant='tenant-1',
+        date='2025-02-04',
+        settlement_year=2025,
+        settlement_month=2,
+        amount_pln=5000.0
+    )
+
+    manager.transfers.extend([too_low, too_high, edge_min, edge_max])
+
+    invalid_transfers = manager.validate_transfers()
+    assert len(invalid_transfers) == 2
+    assert too_low in invalid_transfers
+    assert too_high in invalid_transfers
+
+    with pytest.raises(ValueError):
+        manager.set_transfer_limits(5000.0, 100.0)
