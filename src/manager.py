@@ -112,3 +112,20 @@ class Manager:
         if apartment_key not in self.apartments:
             raise ValueError("Apartment key does not exist")
         return any([bill for bill in self.bills if bill.apartment == apartment_key and bill.settlement_year == year and bill.settlement_month == month])
+
+    def set_transfer_limits(self, min_amount: float, max_amount: float):
+        if min_amount > max_amount:
+            raise ValueError("Minimalna kwota nie może być większa od maksymalnej")
+
+        self.min_transfer_amount = min_amount
+        self.max_transfer_amount = max_amount
+
+    def validate_transfers(self):
+        invalid_transfers = []
+
+        for transfer in self.transfers:
+            if (transfer.amount_pln < self.min_transfer_amount
+                    or transfer.amount_pln > self.max_transfer_amount):
+                invalid_transfers.append(transfer)
+
+        return invalid_transfers
